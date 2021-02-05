@@ -2,6 +2,7 @@ import socket
 
 HOST = 'localhost'
 PORT = 1337
+HTTP_PORT = 80
 
 
 def init_proxy_server():
@@ -33,7 +34,7 @@ def receive_over_connection(conn):
         data = conn.recv(2048)
         print(data)
         full_data += data
-        if not data or data.endswith(b'\r\n\r\n'):
+        if not data or data.endswith(b'\r\n\r\n') or data.endswith(b'\x00\x00'):
             print('No more data to receive.')
             return full_data
 
@@ -53,19 +54,25 @@ def run_proxy():
         if browser_data:
             host_index = browser_data.index(b'Host: ') + len(b'Host: ')
             host = browser_data[host_index:].split(b'\r\n')[0]
-            print(host)
 
-            host_conn = init_proxy_client((host, 80))
+            host_conn = init_proxy_client((host, HTTP_PORT))
 
         while browser_data:
             send_over_connection(host_conn, browser_data)
             host_data = receive_over_connection(host_conn)
+
             print(host_data)
+
             if not host_data:
                 break
             send_over_connection(browser_conn, host_data)
             browser_data = receive_over_connection(browser_conn)
+
             print(browser_data)
+
+        server_sock.close()
+        browser_conn.close()
+        host_conn.close()
 
 
 run_proxy()
