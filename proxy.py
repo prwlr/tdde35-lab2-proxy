@@ -5,7 +5,7 @@ HOST = 'localhost'
 PORT = 1337
 HTTP_PORT = 80
 TIMEOUT_IN_SECONDS = 3
-TROLLY_URL = 'http://zebroid.ida.liu.se/fakenews/trolly.jpg'
+TROLLY_URL = b'http://zebroid.ida.liu.se/fakenews/trolly.jpg'
 
 
 def init_proxy_server():
@@ -40,7 +40,6 @@ def receive_over_connection(conn):
         except socket.error:
             data = b''
         conn.settimeout(None)
-        print(data)
         full_data += data
         if not data \
                 or data.endswith(b'\r\n\r\n') \
@@ -51,39 +50,42 @@ def receive_over_connection(conn):
 
 def send_over_connection(conn, data):
     print('Sending data...')
+    print('Sent data:', data)
     conn.sendall(data)
 
 
 def replace_smiley_url(data, index):
+    print('data to replace:', data)
     start_index = index
     end_index = index
-    while data[end_index + 1] != ' ':
+    while (end_index < len(data)-1) and (data[end_index] != ord(' ')) and (data[end_index] != ord('"')):
+        print(data[end_index])
         end_index += 1
-    while data[start_index - 1] != ' ':
+    while (start_index > 0) and (data[start_index - 1] != ord(' ')) and (data[start_index - 1] != ord('"')):
         start_index -= 1
+    print(start_index, end_index)
+    print(data[start_index:end_index])
     return data.replace(data[start_index:end_index], TROLLY_URL)
 
 
 def replace_forbidden(data):
-    data = str(data)
-
     jpg_index = 0
     png_index = 0
     gif_index = 0
     while True:
         found_replaceable = False
 
-        jpg_index = data.find('smiley.jpg', jpg_index)
+        jpg_index = data.find(b'smiley.jpg', jpg_index)
         if jpg_index != -1:
             data = replace_smiley_url(data, jpg_index)
             found_replaceable = True
 
-        png_index = data.find('smiley.png', png_index)
+        png_index = data.find(b'smiley.png', png_index)
         if png_index != -1:
             data = replace_smiley_url(data, png_index)
             found_replaceable = True
 
-        gif_index = data.find('smiley.gif')
+        gif_index = data.find(b'smiley.gif')
         if gif_index != -1:
             data = replace_smiley_url(data, gif_index)
             found_replaceable = True
@@ -91,11 +93,11 @@ def replace_forbidden(data):
         if not found_replaceable:
             break
 
-    data = data.replace('Smiley',
-                        'Trolly') \
-               .replace('Stockholm',
-                        'Linköping')
-    return bytes(data, 'utf-8')
+    data = data.replace(b'Smiley',
+                        b'Trolly') \
+               .replace(b'Stockholm',
+                        bytes('Linköping', 'utf-8'))
+    return data
 
 
 def run_proxy():
@@ -116,13 +118,11 @@ def run_proxy():
             host_data = receive_over_connection(host_conn)
             if not host_data:
                 break
-            # host_data = replace_forbidden(host_data)
-            print(host_data)
+            host_data = replace_forbidden(host_data)
 
             send_over_connection(browser_conn, host_data)
             browser_data = receive_over_connection(browser_conn)
-            # browser_data = replace_forbidden(browser_data)
-            print(browser_data)
+            browser_data = replace_forbidden(browser_data)
 
         server_sock.close()
         browser_conn.close()
