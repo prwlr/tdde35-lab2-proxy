@@ -84,8 +84,8 @@ def send_over_connection(conn, data):
 def replace_smiley_url(data, index):
     """
     In this lab we want to replace images of smiley with images of trolly,
-    so each instance of a smiley image with suffix '.jpg', '.png' and '.gif'
-    will be replaced with the trolly url at the top of this file.
+    so each instance of a smiley image will be replaced with the trolly url
+    at the top of this file.
     """
     print('data to replace:', data)
     start_index = index
@@ -107,9 +107,9 @@ def replace_smiley_url(data, index):
 
 def replace_forbidden(data):
     """
-    Searches through the data for instances of a smiley image or text instances
-    of 'Smiley' to be replaced with 'Trolly' and instances of 'Stockholm' to be
-    replaced with 'Linköping'.
+    Searches through 'data' for instances of a smiley image with suffix
+    '.jpg', '.png' or '.gif', or text instances of 'Smiley' to be replaced with
+    'Trolly' and text instances of 'Stockholm' to be replaced with 'Linköping'.
     """
     # These keep track of which parts of the data have been searched through
     jpg_index = 0
